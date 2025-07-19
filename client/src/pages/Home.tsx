@@ -835,6 +835,17 @@ Document text: ${extractedText}`;
 
   return (
     <main className="container mx-auto px-4 py-6">
+      {/* Contact Us - Discrete top left corner */}
+      <div className="absolute top-2 left-2 z-10">
+        <a 
+          href="mailto:contact@zhisystems.ai"
+          className="text-xs text-gray-400 hover:text-gray-600 transition-colors"
+          title="Contact support"
+        >
+          Contact Us
+        </a>
+      </div>
+      
       {/* NUKE Button - Prominent at top */}
       <div className="mb-6 flex justify-center">
         <Button 
