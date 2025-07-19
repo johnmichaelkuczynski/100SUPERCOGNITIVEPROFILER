@@ -124,6 +124,27 @@ export default function ChunkedRewriter({
   
   const { toast } = useToast();
 
+  // Math rendering effect - trigger KaTeX rendering when Math View changes
+  useEffect(() => {
+    if (showMathView && showResultsPopup) {
+      setTimeout(() => {
+        const mathContainer = document.querySelector('[data-math-container="true"]');
+        if (mathContainer && window.renderMathInElement) {
+          window.renderMathInElement(mathContainer, {
+            delimiters: [
+              {left: '$$', right: '$$', display: true},
+              {left: '\\[', right: '\\]', display: true},
+              {left: '\\(', right: '\\)', display: false}
+            ],
+            throwOnError: false,
+            strict: false
+          });
+          console.log('✅ Math rendered in progress dialog');
+        }
+      }, 200);
+    }
+  }, [showMathView, showResultsPopup, finalRewrittenContent]);
+
   // Handle text selection for custom rewrite
   const handleTextSelection = () => {
     const selection = window.getSelection();
@@ -2463,11 +2484,41 @@ export default function ChunkedRewriter({
                       <div key={index} className="bg-gray-50 p-4 rounded-lg border">
                         <div className="mb-3">
                           <h4 className="font-medium text-gray-800">
-                            <div dangerouslySetInnerHTML={{ __html: processContentForMathRendering(graph.title || `Graph ${index + 1}`) }} />
+                            <div 
+                              dangerouslySetInnerHTML={{ __html: processContentForMathRendering(graph.title || `Graph ${index + 1}`) }} 
+                              ref={(el) => {
+                                if (el && window.renderMathInElement) {
+                                  setTimeout(() => {
+                                    window.renderMathInElement(el, {
+                                      delimiters: [
+                                        {left: '$$', right: '$$', display: true},
+                                        {left: '\\(', right: '\\)', display: false}
+                                      ],
+                                      throwOnError: false
+                                    });
+                                  }, 50);
+                                }
+                              }}
+                            />
                           </h4>
                           {graph.description && (
                             <div className="text-sm text-gray-600 mt-1">
-                              <div dangerouslySetInnerHTML={{ __html: processContentForMathRendering(graph.description) }} />
+                              <div 
+                                dangerouslySetInnerHTML={{ __html: processContentForMathRendering(graph.description) }} 
+                                ref={(el) => {
+                                  if (el && window.renderMathInElement) {
+                                    setTimeout(() => {
+                                      window.renderMathInElement(el, {
+                                        delimiters: [
+                                          {left: '$$', right: '$$', display: true},
+                                          {left: '\\(', right: '\\)', display: false}
+                                        ],
+                                        throwOnError: false
+                                      });
+                                    }, 50);
+                                  }
+                                }}
+                              />
                             </div>
                           )}
                         </div>
@@ -2484,6 +2535,7 @@ export default function ChunkedRewriter({
                 )}
                 <div 
                   className="w-full prose prose-sm max-w-none p-4"
+                  data-math-container="true"
                   contentEditable={true}
                   suppressContentEditableWarning={true}
                   onInput={(e) => {
@@ -2506,6 +2558,7 @@ export default function ChunkedRewriter({
                           throwOnError: false,
                           strict: false
                         });
+                        console.log('✅ Math rendered after editing');
                       }, 50);
                     }
                   }}
@@ -2524,20 +2577,23 @@ export default function ChunkedRewriter({
                   }}
                   ref={(el) => {
                     if (el && window.renderMathInElement) {
-                      // Clear any existing rendered math first
-                      const mathElements = el.querySelectorAll('.katex');
-                      mathElements.forEach(elem => elem.remove());
-                      
-                      // Render new math
-                      window.renderMathInElement(el, {
-                        delimiters: [
-                          {left: '$$', right: '$$', display: true},
-                          {left: '\\[', right: '\\]', display: true},
-                          {left: '\\(', right: '\\)', display: false}
-                        ],
-                        throwOnError: false,
-                        strict: false
-                      });
+                      setTimeout(() => {
+                        // Clear any existing rendered math first
+                        const mathElements = el.querySelectorAll('.katex');
+                        mathElements.forEach(elem => elem.remove());
+                        
+                        // Render new math
+                        window.renderMathInElement(el, {
+                          delimiters: [
+                            {left: '$$', right: '$$', display: true},
+                            {left: '\\[', right: '\\]', display: true},
+                            {left: '\\(', right: '\\)', display: false}
+                          ],
+                          throwOnError: false,
+                          strict: false
+                        });
+                        console.log('✅ KaTeX math rendered');
+                      }, 100);
                     }
                   }}
                 />

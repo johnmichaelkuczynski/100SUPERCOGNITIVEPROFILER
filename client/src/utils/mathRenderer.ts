@@ -22,22 +22,32 @@ export function renderMathContent(element: HTMLElement): void {
 export function processContentForMathRendering(content: string): string {
   let processed = content;
   
-  // Convert unwrapped LaTeX expressions to properly delimited ones
-  // This is a fallback for when AI models don't generate proper delimiters
+  // CRITICAL: Convert the corrupted text patterns from user's image to proper LaTeX
   
-  // Convert fractions: frac{...}{...} -> \(\frac{...}{...}\)
+  // Convert "to the power of" patterns: "R to the power of n" -> \(R^n\)
+  processed = processed.replace(/(\w+)\s+to\s+the\s+power\s+of\s+(\w+)/g, '\\($1^{$2}\\)');
+  processed = processed.replace(/(\w+)\s+to\s+the\s+power\s+of\s+(\d+)/g, '\\($1^$2\\)');
+  
+  // Convert subscript patterns: "subscript i" -> \(_i\), "subscript rev" -> \(_{rev}\)
+  processed = processed.replace(/(\w+)\s+subscript\s+(\w+)/g, '\\($1_{$2}\\)');
+  processed = processed.replace(/subscript\s+(\w+)/g, '\\(_{$1}\\)');
+  
+  // Convert superscript patterns: "superscript 2" -> \(^2\)
+  processed = processed.replace(/(\w+)\s+superscript\s+(\w+)/g, '\\($1^{$2}\\)');
+  processed = processed.replace(/superscript\s+(\w+)/g, '\\(^{$1}\\)');
+  
+  // Convert matrix notation: "bmatrix" -> proper matrix notation
+  processed = processed.replace(/bmatrix\s+([^b]+?)\s+bmatrix/g, '\\(\\begin{bmatrix} $1 \\end{bmatrix}\\)');
+  
+  // Convert fractions with "over": "Q over T" -> \(\frac{Q}{T}\)
+  processed = processed.replace(/(\w+)\s+over\s+(\w+)/g, '\\(\\frac{$1}{$2}\\)');
+  
+  // Convert already properly formatted LaTeX (unwrapped): frac{...}{...} -> \(\frac{...}{...}\)
   processed = processed.replace(/\bfrac\{([^}]*)\}\{([^}]*)\}/g, '\\(\\frac{$1}{$2}\\)');
   
   // Convert limits: lim_{...} -> \(\lim_{...}\)
   processed = processed.replace(/\blim_\{([^}]*)\}/g, '\\(\\lim_{$1}\\)');
   processed = processed.replace(/\blim\s+to\s+([^}\s]+)/g, '\\(\\lim \\to $1\\)');
-  
-  // Convert specific patterns from the user's screenshots
-  processed = processed.replace(/lim_\{?\(([^}]*)\)\}?/g, '\\(\\lim_{($1)}\\)');
-  processed = processed.replace(/frac\{?\{([^}]*)\}\}?\{?\{([^}]*)\}\}?/g, '\\(\\frac{$1}{$2}\\)');
-  
-  // Convert "to" in mathematical contexts
-  processed = processed.replace(/(\w+)\s+to\s+(\w+)/g, '$1 \\(\\to\\) $2');
   
   // Convert integrals: int_{...}^{...} or int -> \(\int_{...}^{...}\) or \(\int\)
   processed = processed.replace(/\bint_\{([^}]*)\}\^\{([^}]*)\}/g, '\\(\\int_{$1}^{$2}\\)');
@@ -62,7 +72,6 @@ export function processContentForMathRendering(content: string): string {
   
   // Convert common operators: -> becomes \rightarrow, <= becomes \leq, etc.
   processed = processed.replace(/\s+->\s+/g, ' \\(\\rightarrow\\) ');
-  processed = processed.replace(/\s+to\s+/g, ' \\(\\to\\) ');
   processed = processed.replace(/\s*<=\s*/g, ' \\(\\leq\\) ');
   processed = processed.replace(/\s*>=\s*/g, ' \\(\\geq\\) ');
   processed = processed.replace(/\s*!=\s*/g, ' \\(\\neq\\) ');
