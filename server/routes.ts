@@ -2833,27 +2833,30 @@ Your job is to solve problems correctly and write clear, student-friendly explan
       }
 
       // Build the prompt for mathematical notation conversion
-      let prompt = `CRITICAL: Only convert actual mathematical expressions to LaTeX. Do NOT add LaTeX markup to regular words or phrases.
+      let prompt = `Convert this text to use perfect LaTeX mathematical notation. Follow these CRITICAL rules:
 
-STRICT RULES:
-- Only convert genuine mathematical expressions (equations, formulas, symbols, variables)
-- Keep all regular text as normal text without any LaTeX formatting
-- Do NOT wrap regular words in \\textit{}, \\text{}, or any LaTeX commands
-- Currency amounts like $25, $300 should remain as regular text
-- Only use LaTeX for actual math: equations, Greek letters, mathematical operators, fractions
-- Return clean plain text with LaTeX only where mathematically necessary
-- CRITICAL FORMATTING RULES: Write ONLY in plain text format. NEVER use markdown formatting including ### headers, ** bold text, * italic text, - bullet points, numbered lists, or any other markup. Write in simple paragraph format only.
-- NEVER add editorial comments or metadata
+MANDATORY LaTeX FORMATTING:
+- Wrap ALL mathematical expressions in \\( \\) delimiters
+- Convert subscripts: S_system becomes \\(S_{\\text{system}}\\)
+- Convert Greek letters: alpha becomes \\(\\alpha\\), delta becomes \\(\\Delta\\), etc.
+- Convert equations: dS = Q/T becomes \\(dS = Q/T\\)
+- Convert fractions: Q/T becomes \\(\\frac{Q}{T}\\)
+- Convert constants: k_B becomes \\(k_B\\), R becomes \\(R\\)
+- Convert variables with subscripts: P_1, V_1 becomes \\(P_1\\), \\(V_1\\)
 
-EXAMPLES OF WHAT NOT TO DO:
-- Do NOT convert "luxury dilution" to "\\textit{luxury dilution}"
-- Do NOT convert "the price is $300" to "\\text{the price is } \\$300"
-- Do NOT add LaTeX formatting to regular English words
+CRITICAL EXAMPLES FOR YOUR REFERENCE:
+- "entropy S" → "entropy \\(S\\)"
+- "temperature T" → "temperature \\(T\\)" 
+- "S = k ln(W)" → "\\(S = k \\ln(W)\\)"
+- "dS = Q subscript rev over T" → "\\(dS = \\frac{Q_{\\text{rev}}}{T}\\)"
+- "Boltzmann constant k" → "Boltzmann constant \\(k\\)"
+- "gas constant R = 8.314 J/mol" → "gas constant \\(R = 8.314\\) J/mol"
 
-EXAMPLES OF CORRECT CONVERSION:
-- "x^2 + y^2 = z^2" becomes "\\(x^2 + y^2 = z^2\\)"
-- "α = 0.05" becomes "\\(\\alpha = 0.05\\)"
-- Regular text stays as regular text
+FORBIDDEN PATTERNS:
+- NEVER write "subscript rev" - use \\(Q_{\\text{rev}}\\)
+- NEVER write "superscript 2" - use \\(x^2\\)
+- NEVER use plain text for mathematical symbols
+- NEVER add editorial comments
 
 Content to convert:
 ${content}`;
@@ -2872,7 +2875,7 @@ ${content}`;
 
       // Use the specified model for conversion
       let result = '';
-      const selectedModel = model || 'claude';
+      const selectedModel = model || 'deepseek';
 
       if (selectedModel === 'claude') {
         const { default: Anthropic } = await import('@anthropic-ai/sdk');
@@ -2884,7 +2887,7 @@ ${content}`;
           model: 'claude-3-5-sonnet-20241022',
           max_tokens: 4000,
           temperature: 0.1, // Low temperature for precise mathematical formatting
-          system: "CRITICAL: ALL mathematical expressions MUST be wrapped in \\(...\\) delimiters. Examples: \\(\\alpha\\), \\(\\beta\\), \\(\\sigma\\), \\(x^2\\), \\(\\sqrt{2}\\), \\(a^2 + b^2 = c^2\\). NEVER leave math expressions unwrapped. Do NOT add LaTeX markup to regular words. Keep regular text as normal text. Currency amounts like $25, $300 stay as regular text. Only use LaTeX for actual mathematical expressions. Return clean text with proper LaTeX wrapping for all math.",
+          system: "CRITICAL: Convert mathematical notation to proper LaTeX. Examples: 'S subscript rev' becomes \\(S_{\\text{rev}}\\), 'alpha' becomes \\(\\alpha\\), 'dS = Q/T' becomes \\(dS = \\frac{Q}{T}\\). ALWAYS wrap math in \\(...\\) delimiters. NEVER write 'subscript' or 'superscript' as text - use LaTeX notation. Currency amounts like $25 stay as regular text.",
           messages: [{ role: 'user', content: prompt }]
         });
 
@@ -2898,7 +2901,7 @@ ${content}`;
         const response = await openai.chat.completions.create({
           model: 'gpt-4',
           messages: [
-            { role: 'system', content: 'CRITICAL: ALL mathematical expressions MUST be wrapped in \\(...\\) delimiters. Examples: \\(\\alpha\\), \\(\\beta\\), \\(\\sigma\\), \\(x^2\\), \\(\\sqrt{2}\\), \\(a^2 + b^2 = c^2\\). NEVER leave math expressions unwrapped. Do NOT add LaTeX markup to regular words. Currency amounts like $25, $300 stay as regular text. Only use LaTeX for actual mathematical expressions.' },
+            { role: 'system', content: "CRITICAL: Convert mathematical notation to proper LaTeX. Examples: 'S subscript rev' becomes \\(S_{\\text{rev}}\\), 'alpha' becomes \\(\\alpha\\), 'dS = Q/T' becomes \\(dS = \\frac{Q}{T}\\). ALWAYS wrap math in \\(...\\) delimiters. NEVER write 'subscript' or 'superscript' as text - use LaTeX notation. Currency amounts like $25 stay as regular text." },
             { role: 'user', content: prompt }
           ],
           max_tokens: 4000,
@@ -2908,7 +2911,7 @@ ${content}`;
         result = response.choices[0]?.message?.content || '';
       } else if (selectedModel === 'deepseek') {
         // Create system prompt for DeepSeek to prevent metadata insertions and LaTeX corruption
-        const systemPrompt = 'CRITICAL: ALL mathematical expressions MUST be wrapped in \\(...\\) delimiters. Examples: \\(\\alpha\\), \\(\\beta\\), \\(\\sigma\\), \\(x^2\\), \\(\\sqrt{2}\\), \\(a^2 + b^2 = c^2\\). NEVER leave math expressions unwrapped. Do NOT add LaTeX markup to regular words. Currency amounts like $25, $300 stay as regular text. Only use LaTeX for actual mathematical expressions.';
+        const systemPrompt = "CRITICAL: Convert mathematical notation to proper LaTeX. Examples: 'S subscript rev' becomes \\(S_{\\text{rev}}\\), 'alpha' becomes \\(\\alpha\\), 'dS = Q/T' becomes \\(dS = \\frac{Q}{T}\\). ALWAYS wrap math in \\(...\\) delimiters. NEVER write 'subscript' or 'superscript' as text - use LaTeX notation. Currency amounts like $25 stay as regular text.";
         
         result = await callDeepSeekWithRateLimit(`${systemPrompt}\n\n${prompt}`, {
           temperature: 0.1,
@@ -2925,7 +2928,7 @@ ${content}`;
           model: 'claude-3-5-sonnet-20241022',
           max_tokens: 4000,
           temperature: 0.1,
-          system: "You are a mathematical notation expert. Convert text to perfect LaTeX formatting while preserving all mathematical meaning. Be precise and accurate with LaTeX syntax. CRITICAL CURRENCY FORMATTING: Write all currency amounts as regular text ($25, $300, $5). NEVER escape dollar signs with backslashes. Currency should appear as $300, not \\$300. This is mandatory.",
+          system: "CRITICAL: Convert mathematical notation to proper LaTeX. Examples: 'S subscript rev' becomes \\(S_{\\text{rev}}\\), 'alpha' becomes \\(\\alpha\\), 'dS = Q/T' becomes \\(dS = \\frac{Q}{T}\\). ALWAYS wrap math in \\(...\\) delimiters. NEVER write 'subscript' or 'superscript' as text - use LaTeX notation. Currency amounts like $25 stay as regular text.",
           messages: [{ role: 'user', content: prompt }]
         });
 
