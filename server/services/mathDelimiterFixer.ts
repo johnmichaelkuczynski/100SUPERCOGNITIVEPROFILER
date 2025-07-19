@@ -2,148 +2,65 @@
 // Implements intelligent LaTeX math delimiter detection with robust currency protection
 
 export function sanitizeMathAndCurrency(text: string): string {
-  console.log('🔧 Starting advanced math delimiter and currency sanitization');
+  console.log('🔧 Starting text cleanup - removing LaTeX markup');
   
-  // Step 1: Protect all currency patterns (more comprehensive)
-  const currencyPatterns = [
-    /\$(\d{1,3}(?:,\d{3})*(?:\.\d{2})?)\b/g,  // $1,000.00, $25.50, $1000
-    /\$(\d+\.?\d*)\s*(?:USD|dollars?|bucks?)\b/gi, // $25 USD, $100 dollars
-    /(?:USD|dollars?)\s*\$(\d+\.?\d*)\b/gi,  // USD $25, dollars $100
-    /\$(\d+)\s*(?:million|billion|thousand|k)\b/gi // $5 million, $10k
-  ];
+  // Step 1: Remove all LaTeX delimiters and commands completely
+  let cleaned = text;
   
-  const currencyReplacements: string[] = [];
-  let placeholderIndex = 0;
+  // Remove LaTeX delimiters completely
+  cleaned = cleaned.replace(/\\\(/g, '');
+  cleaned = cleaned.replace(/\\\)/g, '');
+  cleaned = cleaned.replace(/\$\$/g, '');
+  cleaned = cleaned.replace(/\\\[/g, '');
+  cleaned = cleaned.replace(/\\\]/g, '');
   
-  currencyPatterns.forEach(pattern => {
-    text = text.replace(pattern, (match) => {
-      const placeholder = `CURRENCY_PLACEHOLDER_${placeholderIndex}`;
-      currencyReplacements.push(match);
-      placeholderIndex++;
-      return placeholder;
-    });
-  });
+  // Remove all LaTeX commands but keep the content where possible
+  cleaned = cleaned.replace(/\\([a-zA-Z]+)\{([^}]*)\}/g, '$2'); // \command{content} -> content
+  cleaned = cleaned.replace(/\\([a-zA-Z]+)/g, ''); // Remove standalone commands
   
-  console.log(`🔧 Protected ${currencyReplacements.length} currency expressions`);
+  // Convert common math symbols to readable text
+  const symbolToText: { [key: string]: string } = {
+    // Greek letters to their names
+    'α': 'alpha', 'β': 'beta', 'γ': 'gamma', 'δ': 'delta', 'ε': 'epsilon', 'ζ': 'zeta',
+    'η': 'eta', 'θ': 'theta', 'ι': 'iota', 'κ': 'kappa', 'λ': 'lambda', 'μ': 'mu',
+    'ν': 'nu', 'ξ': 'xi', 'π': 'pi', 'ρ': 'rho', 'σ': 'sigma',
+    'τ': 'tau', 'υ': 'upsilon', 'φ': 'phi', 'χ': 'chi', 'ψ': 'psi', 'ω': 'omega',
+    
+    // Arrows to text
+    '→': ' goes to ', '←': ' comes from ', '↔': ' corresponds to ',
+    '⇒': ' implies ', '⇐': ' is implied by ', '⇔': ' if and only if ',
+    
+    // Math symbols to text
+    '≤': ' less than or equal to ', '≥': ' greater than or equal to ', 
+    '≠': ' not equal to ', '≡': ' is equivalent to ', '≈': ' approximately equals ',
+    '∞': ' infinity ', '√': ' square root of ', '±': ' plus or minus ', 
+    '×': ' times ', '÷': ' divided by ', '∑': ' sum of ', '∫': ' integral of ',
+    '∂': ' partial derivative ', '∇': ' gradient ', '∴': ' therefore ', '∵': ' because ',
+    '⊥': ' perpendicular to ', '∥': ' parallel to ', '∠': ' angle ', '°': ' degrees ',
+    '∅': ' empty set ', '∈': ' is in ', '∉': ' is not in ', '⊆': ' is subset of ',
+    '∪': ' union ', '∩': ' intersection ', '∀': ' for all ', '∃': ' there exists '
+  };
   
-  // Step 2: Convert ALL Unicode technical symbols to proper LaTeX
-  const unicodeToLatex: { [key: string]: string } = {
-    // Set theory and logic
-    '∈': '\\in', '∉': '\\notin', '∪': '\\cup', '∩': '\\cap', '⊆': '\\subseteq', '⊇': '\\supseteq',
-    '⊂': '\\subset', '⊃': '\\supset', '∅': '\\emptyset', '∀': '\\forall', '∃': '\\exists',
-    '¬': '\\neg', '∧': '\\wedge', '∨': '\\vee', '⊕': '\\oplus', '⊗': '\\otimes',
-    
-    // Greek alphabet - lowercase
-    'α': '\\alpha', 'β': '\\beta', 'γ': '\\gamma', 'δ': '\\delta', 'ε': '\\epsilon', 'ζ': '\\zeta',
-    'η': '\\eta', 'θ': '\\theta', 'ι': '\\iota', 'κ': '\\kappa', 'λ': '\\lambda', 'μ': '\\mu',
-    'ν': '\\nu', 'ξ': '\\xi', 'π': '\\pi', 'ρ': '\\rho', 'σ': '\\sigma',
-    'τ': '\\tau', 'υ': '\\upsilon', 'φ': '\\phi', 'χ': '\\chi', 'ψ': '\\psi', 'ω': '\\omega',
-    
-    // Greek alphabet - uppercase
-    'Γ': '\\Gamma', 'Δ': '\\Delta', 'Θ': '\\Theta', 'Λ': '\\Lambda', 'Ξ': '\\Xi', 'Π': '\\Pi', 
-    'Σ': '\\Sigma', 'Υ': '\\Upsilon', 'Φ': '\\Phi', 'Ψ': '\\Psi', 'Ω': '\\Omega',
-    
-    // Arrows
-    '→': '\\rightarrow', '←': '\\leftarrow', '↔': '\\leftrightarrow', '↑': '\\uparrow', '↓': '\\downarrow',
-    '⇒': '\\Rightarrow', '⇐': '\\Leftarrow', '⇔': '\\Leftrightarrow', '⇑': '\\Uparrow', '⇓': '\\Downarrow',
-    '↗': '\\nearrow', '↘': '\\searrow', '↙': '\\swarrow', '↖': '\\nwarrow',
-    '⟵': '\\longleftarrow', '⟶': '\\longrightarrow', '⟷': '\\longleftrightarrow',
-    '⟸': '\\Longleftarrow', '⟹': '\\Longrightarrow', '⟺': '\\Longleftrightarrow',
-    '↦': '\\mapsto', '⇀': '\\rightharpoonup', '↼': '\\leftharpoonup',
-    
-    // Comparison operators
-    '≤': '\\leq', '≥': '\\geq', '≠': '\\neq', '≡': '\\equiv', '≢': '\\not\\equiv', '≈': '\\approx',
-    '≅': '\\cong', '∼': '\\sim', '≃': '\\simeq', '≪': '\\ll', '≫': '\\gg', '≺': '\\prec',
-    '≻': '\\succ', '⪯': '\\preceq', '⪰': '\\succeq', '∝': '\\propto', '≲': '\\lesssim', '≳': '\\gtrsim',
-    
-    // Mathematical operators
-    '±': '\\pm', '∓': '\\mp', '×': '\\times', '÷': '\\div', '∗': '\\ast', '◦': '\\circ',
-    '∙': '\\bullet', '⋅': '\\cdot', '⊙': '\\odot', '⊘': '\\oslash',
-    '√': '\\sqrt', '∛': '\\sqrt[3]', '∜': '\\sqrt[4]', '∞': '\\infty',
-    
-    // Calculus and analysis
-    '∂': '\\partial', '∇': '\\nabla', '∫': '\\int', '∬': '\\iint', '∭': '\\iiint', '∮': '\\oint',
-    '∯': '\\oiint', '∰': '\\oiiint', '∑': '\\sum', '∏': '\\prod', '∐': '\\coprod', 
-    '⋃': '\\bigcup', '⋂': '\\bigcap', '⋁': '\\bigvee', '⋀': '\\bigwedge', '⨁': '\\bigoplus', '⨂': '\\bigotimes',
-    
-    // Complex numbers and fields
-    'ℂ': '\\mathbb{C}', 'ℝ': '\\mathbb{R}', 'ℚ': '\\mathbb{Q}', 'ℤ': '\\mathbb{Z}', 'ℕ': '\\mathbb{N}',
-    'ℍ': '\\mathbb{H}', '𝔽': '\\mathbb{F}', '𝔸': '\\mathbb{A}', 'ℙ': '\\mathbb{P}', '𝕂': '\\mathbb{K}',
-    
-    // Topology and geometry
-    '∘': '\\circ', '∴': '\\therefore', '∵': '\\because', '⊥': '\\perp', '∥': '\\parallel',
-    '∠': '\\angle', '∡': '\\measuredangle', '∢': '\\sphericalangle', '⊿': '\\triangle', '□': '\\square',
-    '△': '\\triangle', '▲': '\\blacktriangle', '▼': '\\blacktriangledown',
-    
-    // Physics notation
-    'ℏ': '\\hbar', '℘': '\\wp', '°': '^\\circ', '′': '\\prime', '″': '\\prime\\prime',
-    '‴': '\\prime\\prime\\prime',
-    
-    // Chemistry notation
-    '⇌': '\\rightleftharpoons', '⇋': '\\leftrightharpoons',
-    
-    // Computer science
-    '⊤': '\\top',
-    
-    // Superscripts and subscripts
-    '⁰': '^0', '¹': '^1', '²': '^2', '³': '^3', '⁴': '^4', '⁵': '^5', '⁶': '^6', '⁷': '^7', '⁸': '^8', '⁹': '^9',
-    '⁺': '^+', '⁻': '^-', '⁼': '^=', '⁽': '^(', '⁾': '^)', 'ⁿ': '^n', 'ᵃ': '^a', 'ᵇ': '^b', 'ᶜ': '^c',
-    '₀': '_0', '₁': '_1', '₂': '_2', '₃': '_3', '₄': '_4', '₅': '_5', '₆': '_6', '₇': '_7', '₈': '_8', '₉': '_9',
-    '₊': '_+', '₋': '_-', '₌': '_=', '₍': '_(', '₎': '_)', 'ₐ': '_a', 'ₑ': '_e', 'ᵢ': '_i', 'ₒ': '_o', 'ᵤ': '_u',
-    
-    // Miscellaneous technical symbols
-    '⋯': '\\cdots', '⋮': '\\vdots', '⋱': '\\ddots', '⋰': '\\iddots',
-    '⌊': '\\lfloor', '⌋': '\\rfloor', '⌈': '\\lceil', '⌉': '\\rceil', 
-    '⟨': '\\langle', '⟩': '\\rangle',
-    '‖': '\\|', '∦': '\\nparallel', '≗': '\\circeq', '≜': '\\triangleq'
+  // Apply symbol to text conversions
+  for (const [symbol, text] of Object.entries(symbolToText)) {
+    const regex = new RegExp(symbol.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
+    cleaned = cleaned.replace(regex, text);
   }
-
-  // Convert Unicode symbols to LaTeX using a more efficient approach
-  const unicodeSymbols = Object.keys(unicodeToLatex);
-  for (const symbol of unicodeSymbols) {
-    if (text.includes(symbol)) {
-      const latex = unicodeToLatex[symbol];
-      const regex = new RegExp(symbol.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
-      text = text.replace(regex, ` ${latex} `);
-      console.log(`🔧 Converted ${symbol} to ${latex}`);
-    }
-  }
-
-  // Step 3: Identify and convert legitimate math expressions in dollar signs
-  const mathIndicators = /[\^_{}\\]|\\[a-zA-Z]+|\b(?:sin|cos|tan|log|ln|exp|sqrt|sum|int|lim|alpha|beta|gamma|theta|pi|sigma|mu|lambda|delta|epsilon|omega|forall|exists|in|cup|cap|subset|emptyset)\b/;
   
-  text = text.replace(/\$([^$\n]+)\$/g, (match, content) => {
-    // Check if content contains mathematical indicators
-    if (mathIndicators.test(content)) {
-      console.log(`🔧 Converting math expression: $${content}$`);
-      return `\\(${content}\\)`;
-    }
-    // If no math indicators, leave as regular text
-    console.log(`🔧 Keeping as regular text: ${match}`);
-    return match;
-  });
+  // Remove any remaining curly braces, backslashes, and LaTeX artifacts
+  cleaned = cleaned.replace(/[{}]/g, '');
+  cleaned = cleaned.replace(/\\/g, '');
+  cleaned = cleaned.replace(/\^(\w+)/g, ' to the power of $1');
+  cleaned = cleaned.replace(/_(\w+)/g, ' subscript $1');
   
-  // Step 4: Wrap mathematical expressions in proper delimiters
-  // Find sequences of LaTeX commands and wrap them appropriately
-  text = text.replace(/(\s*\\[a-zA-Z]+(?:\s*\\[a-zA-Z]+)*\s*)/g, (match) => {
-    const trimmed = match.trim();
-    if (trimmed.length > 0) {
-      return ` \\(${trimmed}\\) `;
-    }
-    return match;
-  });
-
-  // Clean up multiple spaces
-  text = text.replace(/\s+/g, ' ').trim();
-
-  // Step 5: Restore currency symbols
-  currencyReplacements.forEach((currency, index) => {
-    const placeholder = `CURRENCY_PLACEHOLDER_${index}`;
-    text = text.replace(placeholder, currency);
-  });
+  // Clean up multiple spaces and normalize text
+  cleaned = cleaned.replace(/\s+/g, ' ');
+  cleaned = cleaned.replace(/\s*,\s*/g, ', ');
+  cleaned = cleaned.replace(/\s*\.\s*/g, '. ');
+  cleaned = cleaned.trim();
   
-  console.log('🔧 Restored all currency symbols');
-  return text;
+  console.log('🔧 Text cleaned - all LaTeX markup removed');
+  return cleaned;
 }
 
 export function validateMathDelimiters(text: string): {

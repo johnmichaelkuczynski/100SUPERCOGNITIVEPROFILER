@@ -2113,8 +2113,19 @@ export default function ChunkedRewriter({
             <Button 
               variant="outline" 
               onClick={() => {
-                // Download as clean TXT file
-                const cleanContent = finalRewrittenContent;
+                // Download as clean TXT file - remove ALL markup
+                let cleanContent = finalRewrittenContent;
+                
+                // Remove LaTeX delimiters and commands
+                cleanContent = cleanContent.replace(/\\\(/g, '').replace(/\\\)/g, '');
+                cleanContent = cleanContent.replace(/\$\$/g, '');
+                cleanContent = cleanContent.replace(/\\\[/g, '').replace(/\\\]/g, '');
+                cleanContent = cleanContent.replace(/\\([a-zA-Z]+)\{([^}]*)\}/g, '$2');
+                cleanContent = cleanContent.replace(/\\([a-zA-Z]+)/g, '');
+                cleanContent = cleanContent.replace(/[{}]/g, '');
+                cleanContent = cleanContent.replace(/\\/g, '');
+                cleanContent = cleanContent.replace(/\s+/g, ' ').trim();
+                
                 const blob = new Blob([cleanContent], { type: 'text/plain' });
                 const url = window.URL.createObjectURL(blob);
                 const a = document.createElement('a');
@@ -2128,7 +2139,7 @@ export default function ChunkedRewriter({
 
                 toast({
                   title: "Download started",
-                  description: "Your text file is downloading.",
+                  description: "Your clean text file is downloading.",
                 });
               }}
               className="flex items-center space-x-2"
@@ -2147,7 +2158,15 @@ export default function ChunkedRewriter({
                       'Content-Type': 'application/json',
                     },
                     body: JSON.stringify({
-                      content: finalRewrittenContent,
+                      content: finalRewrittenContent
+                        .replace(/\\\(/g, '').replace(/\\\)/g, '')
+                        .replace(/\$\$/g, '')
+                        .replace(/\\\[/g, '').replace(/\\\]/g, '')
+                        .replace(/\\([a-zA-Z]+)\{([^}]*)\}/g, '$2')
+                        .replace(/\\([a-zA-Z]+)/g, '')
+                        .replace(/[{}]/g, '')
+                        .replace(/\\/g, '')
+                        .replace(/\s+/g, ' ').trim(),
                       format: 'docx',
                       title: 'Rewritten Document'
                     }),
