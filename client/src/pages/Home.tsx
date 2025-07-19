@@ -2010,6 +2010,12 @@ Document text: ${extractedText}`;
             onAddToChat={handleAddChunkedRewriteToChat}
             chatHistory={messages.map(msg => ({ role: msg.role, content: msg.content }))}
             initialProcessingMode={rewriterProcessingMode}
+            onSendToRewrite={(content: string) => {
+              // Send the processed math notation back to the direct input text area
+              setDirectInputText(content);
+              setProcessingMode('rewrite'); // Switch to rewrite mode
+              setIsChunkedRewriterOpen(false); // Close the current dialog
+            }}
           />
         </DialogContent>
       </Dialog>

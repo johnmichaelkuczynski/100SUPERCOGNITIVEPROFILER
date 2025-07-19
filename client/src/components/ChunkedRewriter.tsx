@@ -29,6 +29,7 @@ interface ChunkedRewriterProps {
   onAddToChat: (content: string, metadata: any) => void;
   chatHistory?: Array<{role: string; content: string}>;
   initialProcessingMode?: 'rewrite' | 'homework' | 'text-to-math';
+  onSendToRewrite?: (content: string) => void;
 }
 
 // ChunkPreviewExpander component for expandable previews
@@ -79,7 +80,8 @@ export default function ChunkedRewriter({
   onRewriteComplete, 
   onAddToChat,
   chatHistory = [],
-  initialProcessingMode = 'rewrite'
+  initialProcessingMode = 'rewrite',
+  onSendToRewrite
 }: ChunkedRewriterProps) {
   const [chunks, setChunks] = useState<TextChunk[]>([]);
   const [instructions, setInstructions] = useState('');
@@ -2147,6 +2149,25 @@ export default function ChunkedRewriter({
               <Download className="w-4 h-4" />
               <span>Download TXT</span>
             </Button>
+
+            {/* Send to Rewrite Button - only show for text-to-math mode */}
+            {processingMode === 'text-to-math' && onSendToRewrite && (
+              <Button 
+                variant="default"
+                onClick={() => {
+                  onSendToRewrite(finalRewrittenContent);
+                  setShowResultsPopup(false);
+                  toast({
+                    title: "Sent to Rewrite",
+                    description: "Math notation content has been sent to the rewrite input box.",
+                  });
+                }}
+                className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                <span>Send to Rewrite</span>
+              </Button>
+            )}
             
             <Button 
               variant="outline" 
