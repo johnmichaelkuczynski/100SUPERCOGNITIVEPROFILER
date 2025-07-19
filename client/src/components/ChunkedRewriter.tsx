@@ -126,22 +126,40 @@ export default function ChunkedRewriter({
 
   // Math rendering effect - trigger KaTeX rendering when Math View changes
   useEffect(() => {
-    if (showMathView && showResultsPopup) {
+    if (showMathView && showResultsPopup && finalRewrittenContent) {
       setTimeout(() => {
         const mathContainer = document.querySelector('[data-math-container="true"]');
         if (mathContainer && window.renderMathInElement) {
-          window.renderMathInElement(mathContainer, {
-            delimiters: [
-              {left: '$$', right: '$$', display: true},
-              {left: '\\[', right: '\\]', display: true},
-              {left: '\\(', right: '\\)', display: false}
-            ],
-            throwOnError: false,
-            strict: false
-          });
-          console.log('✅ Math rendered in progress dialog');
+          console.log('🔄 useEffect KaTeX trigger - Math View toggled');
+          console.log('🔍 Content sample:', finalRewrittenContent.substring(0, 100));
+          
+          try {
+            window.renderMathInElement(mathContainer, {
+              delimiters: [
+                {left: '$$', right: '$$', display: true},
+                {left: '\\[', right: '\\]', display: true},
+                {left: '\\(', right: '\\)', display: false}
+              ],
+              throwOnError: false,
+              strict: false
+            });
+            
+            // Check if rendering worked
+            const katexElements = mathContainer.querySelectorAll('.katex');
+            console.log(`📊 useEffect KaTeX render: ${katexElements.length} elements found`);
+            
+            if (katexElements.length > 0) {
+              console.log('✅ Math rendered successfully in progress dialog');
+            } else {
+              console.log('⚠️ No KaTeX elements found after rendering');
+            }
+          } catch (error) {
+            console.error('❌ useEffect KaTeX rendering failed:', error);
+          }
+        } else {
+          console.log('❌ Math container or renderMathInElement not found');
         }
-      }, 200);
+      }, 300);
     }
   }, [showMathView, showResultsPopup, finalRewrittenContent]);
 
@@ -2576,24 +2594,30 @@ export default function ChunkedRewriter({
                     __html: processContentForMathRendering(finalRewrittenContent)
                   }}
                   ref={(el) => {
-                    if (el && window.renderMathInElement) {
+                    if (el && window.renderMathInElement && showMathView) {
+                      // Force immediate rendering with longer timeout
                       setTimeout(() => {
-                        // Clear any existing rendered math first
-                        const mathElements = el.querySelectorAll('.katex');
-                        mathElements.forEach(elem => elem.remove());
-                        
-                        // Render new math
-                        window.renderMathInElement(el, {
-                          delimiters: [
-                            {left: '$$', right: '$$', display: true},
-                            {left: '\\[', right: '\\]', display: true},
-                            {left: '\\(', right: '\\)', display: false}
-                          ],
-                          throwOnError: false,
-                          strict: false
-                        });
-                        console.log('✅ KaTeX math rendered');
-                      }, 100);
+                        console.log('🔍 Attempting KaTeX render on element:', el.innerText.substring(0, 100));
+                        try {
+                          window.renderMathInElement(el, {
+                            delimiters: [
+                              {left: '$$', right: '$$', display: true},
+                              {left: '\\[', right: '\\]', display: true},
+                              {left: '\\(', right: '\\)', display: false}
+                            ],
+                            throwOnError: false,
+                            strict: false
+                          });
+                          console.log('✅ KaTeX math rendered successfully');
+                          
+                          // Verify render worked
+                          const katexElements = el.querySelectorAll('.katex');
+                          console.log(`📊 Found ${katexElements.length} rendered KaTeX elements`);
+                          
+                        } catch (error) {
+                          console.error('❌ KaTeX rendering failed:', error);
+                        }
+                      }, 200);
                     }
                   }}
                 />

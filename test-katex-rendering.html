@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>KaTeX Test</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
+</head>
+<body>
+    <div id="test-content">
+        Consider a differentiable function \(f(x, y)\) that we wish to optimize subject to an equality constraint \(g(x, y) = c\), where \(c\) is a constant.
+    </div>
+    
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const element = document.getElementById('test-content');
+            renderMathInElement(element, {
+                delimiters: [
+                    {left: '$$', right: '$$', display: true},
+                    {left: '\\[', right: '\\]', display: true},
+                    {left: '\\(', right: '\\)', display: false}
+                ],
+                throwOnError: false,
+                strict: false
+            });
+            console.log('KaTeX rendering attempted');
+        });
+    </script>
+</body>
+</html>
