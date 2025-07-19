@@ -2189,7 +2189,7 @@ export default function ChunkedRewriter({
               <span>Download TXT</span>
             </Button>
 
-            {/* Send to Rewrite Button - only show for text-to-math mode */}
+            {/* Send to Main Text Processor Button - only show for text-to-math mode */}
             {processingMode === 'text-to-math' && onSendToRewrite && (
               <Button 
                 variant="default"
@@ -2197,14 +2197,15 @@ export default function ChunkedRewriter({
                   onSendToRewrite(finalRewrittenContent);
                   setShowResultsPopup(false);
                   toast({
-                    title: "Sent to Rewrite",
-                    description: "Math notation content has been sent to the rewrite input box.",
+                    title: "Sent to Main Processor",
+                    description: "Perfect math notation has been sent to the main AI Text Processor input box.",
                   });
                 }}
                 className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700"
+                title="Send this math-perfect content to the main AI Text Processor for further processing"
               >
                 <ArrowLeft className="w-4 h-4" />
-                <span>Send to Rewrite</span>
+                <span>Send to Main Text Processor</span>
               </Button>
             )}
             

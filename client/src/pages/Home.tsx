@@ -298,6 +298,33 @@ export default function Home() {
       textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
     }
   }, [prompt]);
+
+  // Math rendering effect for main text processor
+  useEffect(() => {
+    if (showMathView && directInputText.trim()) {
+      setTimeout(() => {
+        const mathElements = document.querySelectorAll('[data-math-container]');
+        mathElements.forEach(el => {
+          if (window.renderMathInElement) {
+            try {
+              window.renderMathInElement(el, {
+                delimiters: [
+                  {left: '$$', right: '$$', display: true},
+                  {left: '\\[', right: '\\]', display: true},
+                  {left: '\\(', right: '\\)', display: false}
+                ],
+                throwOnError: false,
+                strict: false
+              });
+              console.log('✅ Math rendered in main text processor Math View');
+            } catch (error) {
+              console.error('❌ Math rendering failed in main processor:', error);
+            }
+          }
+        });
+      }, 200);
+    }
+  }, [showMathView, directInputText]);
   
   const handleProcessRequest = async () => {
     // Allow empty prompts if files are uploaded
@@ -880,23 +907,83 @@ Document text: ${extractedText}`;
             </TabsList>
             
             <TabsContent value="text">
-              {/* Text Input */}
+              {/* Text Input with Math View Toggle */}
               <div 
                 className={`space-y-2 ${isDragging ? 'bg-blue-50 border-2 border-dashed border-blue-300 rounded-lg p-2' : ''}`}
                 onDragOver={handleDragOver}
                 onDragLeave={handleDragLeave}
                 onDrop={handleDirectDrop}
               >
-                <textarea 
-                  placeholder={isDragging ? "Drop files here to upload..." : 
-                    (processingMode === 'homework' 
-                      ? "Paste exam questions, homework assignments, or instructions here..." 
-                      : "Paste your text to rewrite, improve, or transform here...")
-                  }
-                  className="w-full h-40 p-4 border rounded-lg resize-none"
-                  value={directInputText}
-                  onChange={(e) => setDirectInputText(e.target.value)}
-                />
+                {/* Math View Toggle */}
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center space-x-2">
+                    <Button
+                      variant={!showMathView ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setShowMathView(false)}
+                    >
+                      Text View
+                    </Button>
+                    <Button
+                      variant={showMathView ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setShowMathView(true)}
+                    >
+                      Math View
+                    </Button>
+                  </div>
+                  <span className="text-xs text-gray-500">
+                    Toggle between text editing and mathematical notation display
+                  </span>
+                </div>
+
+                {showMathView ? (
+                  /* Math View - Beautiful rendered notation */
+                  <div 
+                    className="w-full h-40 p-4 border rounded-lg bg-white overflow-y-auto"
+                    data-math-container="main-processor"
+                    style={{ 
+                      fontFamily: '"Times New Roman", serif',
+                      fontSize: '14px',
+                      lineHeight: '1.6'
+                    }}
+                    dangerouslySetInnerHTML={{
+                      __html: directInputText.trim() ? processContentForMathRendering(directInputText) : '<p class="text-gray-400">Mathematical notation will appear here when you switch to Math View</p>'
+                    }}
+                    ref={(el) => {
+                      if (el && window.renderMathInElement && directInputText.trim()) {
+                        setTimeout(() => {
+                          try {
+                            window.renderMathInElement(el, {
+                              delimiters: [
+                                {left: '$$', right: '$$', display: true},
+                                {left: '\\[', right: '\\]', display: true},
+                                {left: '\\(', right: '\\)', display: false}
+                              ],
+                              throwOnError: false,
+                              strict: false
+                            });
+                            console.log('✅ Math rendered in main text processor');
+                          } catch (error) {
+                            console.error('❌ Math rendering failed:', error);
+                          }
+                        }, 100);
+                      }
+                    }}
+                  />
+                ) : (
+                  /* Text View - Editable textarea */
+                  <textarea 
+                    placeholder={isDragging ? "Drop files here to upload..." : 
+                      (processingMode === 'homework' 
+                        ? "Paste exam questions, homework assignments, or instructions here..." 
+                        : "Paste your text to rewrite, improve, or transform here...")
+                    }
+                    className="w-full h-40 p-4 border rounded-lg resize-none"
+                    value={directInputText}
+                    onChange={(e) => setDirectInputText(e.target.value)}
+                  />
+                )}
               </div>
             </TabsContent>
             
