@@ -821,10 +821,20 @@ Document text: ${extractedText}`;
         </Button>
       </div>
 
-      {/* Mind Profiler - Heart of the App */}
-      <MindProfiler userId={1} />
-      
-      {/* Direct Text Processing Interface */}
+      {/* Main Tab Navigation */}
+      <Tabs defaultValue="main" className="w-full">
+        <TabsList className="grid w-full grid-cols-2 mb-6">
+          <TabsTrigger value="main">Main Features</TabsTrigger>
+          <TabsTrigger value="mind-profiler">Mind Profiler</TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="mind-profiler">
+          {/* Mind Profiler - Heart of the App */}
+          <MindProfiler userId={1} />
+        </TabsContent>
+        
+        <TabsContent value="main">
+          {/* Direct Text Processing Interface */}
       <Card className="mb-6">
         <CardHeader>
           <CardTitle>AI Text Processor</CardTitle>
@@ -2011,6 +2021,8 @@ Document text: ${extractedText}`;
         documentId={chunkedViewerDocument}
         documentName={chunkedViewerName}
       />
+        </TabsContent>
+      </Tabs>
     </main>
   );
 }
