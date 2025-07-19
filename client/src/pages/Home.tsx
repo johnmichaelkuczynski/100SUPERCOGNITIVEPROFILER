@@ -834,17 +834,19 @@ Document text: ${extractedText}`;
   };
 
   return (
-    <main className="container mx-auto px-4 py-6">
+    <>
       {/* Contact Us - Discrete top left corner */}
-      <div className="absolute top-2 left-2 z-10">
+      <div className="fixed top-2 left-2 z-50">
         <a 
           href="mailto:contact@zhisystems.ai"
-          className="text-xs text-gray-400 hover:text-gray-600 transition-colors"
+          className="text-xs text-gray-500 hover:text-gray-700 transition-colors bg-white/80 px-2 py-1 rounded"
           title="Contact support"
         >
           Contact Us
         </a>
       </div>
+      
+      <main className="container mx-auto px-4 py-6">
       
       {/* NUKE Button - Prominent at top */}
       <div className="mb-6 flex justify-center">
@@ -2128,5 +2130,6 @@ Document text: ${extractedText}`;
         </TabsContent>
       </Tabs>
     </main>
+    </>
   );
 }
