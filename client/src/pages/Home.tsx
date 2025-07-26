@@ -80,7 +80,7 @@ export default function Home() {
   const [isChunkedRewriterOpen, setIsChunkedRewriterOpen] = useState(false);
   const [rewriterText, setRewriterText] = useState<string>('');
   const [rewriterTitle, setRewriterTitle] = useState<string>('');
-  const [rewriterProcessingMode, setRewriterProcessingMode] = useState<'rewrite' | 'homework' | 'text-to-math'>('rewrite');
+  const [rewriterProcessingMode, setRewriterProcessingMode] = useState<'rewrite' | 'homework' | 'text-to-math' | 'verbatim'>('rewrite');
   
   // Chunked document viewer state
   const [isChunkedViewerOpen, setIsChunkedViewerOpen] = useState(false);
@@ -91,7 +91,7 @@ export default function Home() {
   const [allDocuments, setAllDocuments] = useState<{name: string, content: string}[]>([]);
   
   // Direct text processor state
-  const [processingMode, setProcessingMode] = useState<'rewrite' | 'homework' | 'text-to-math'>('rewrite');
+  const [processingMode, setProcessingMode] = useState<'rewrite' | 'homework' | 'text-to-math' | 'verbatim'>('rewrite');
   const [directInputText, setDirectInputText] = useState<string>('');
   const [isDirectProcessing, setIsDirectProcessing] = useState(false);
   const [showMathView, setShowMathView] = useState(false);
@@ -881,7 +881,7 @@ Document text: ${extractedText}`;
         </CardHeader>
         <CardContent className="space-y-4">
           {/* Mode Selection */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <Card 
               className={`cursor-pointer transition-all ${processingMode === 'rewrite' ? 'ring-2 ring-blue-500 bg-blue-50' : 'hover:bg-gray-50'}`}
               onClick={() => setProcessingMode('rewrite')}
@@ -907,6 +907,15 @@ Document text: ${extractedText}`;
               <CardContent className="p-4 text-center">
                 <h3 className="font-semibold">Text to Math</h3>
                 <p className="text-sm text-muted-foreground mt-2">Convert markup to perfect mathematical notation</p>
+              </CardContent>
+            </Card>
+            <Card 
+              className={`cursor-pointer transition-all ${processingMode === 'verbatim' ? 'ring-2 ring-orange-500 bg-orange-50' : 'hover:bg-gray-50'}`}
+              onClick={() => setProcessingMode('verbatim')}
+            >
+              <CardContent className="p-4 text-center">
+                <h3 className="font-semibold">Verbatim Copy</h3>
+                <p className="text-sm text-muted-foreground mt-2">AI-generated exact copy to remove formatting artifacts</p>
               </CardContent>
             </Card>
           </div>
@@ -990,6 +999,8 @@ Document text: ${extractedText}`;
                     placeholder={isDragging ? "Drop files here to upload..." : 
                       (processingMode === 'homework' 
                         ? "Paste exam questions, homework assignments, or instructions here..." 
+                        : processingMode === 'verbatim'
+                        ? "Paste document text here to create a clean AI-generated copy without formatting artifacts..."
                         : "Paste your text to rewrite, improve, or transform here...")
                     }
                     className="w-full h-40 p-4 border rounded-lg resize-none"
@@ -1154,6 +1165,8 @@ Document text: ${extractedText}`;
                   ? 'Direct Input - Homework Mode' 
                   : processingMode === 'text-to-math'
                   ? 'Direct Input - Text to Math Mode'
+                  : processingMode === 'verbatim'
+                  ? 'Direct Input - Verbatim Copy Mode'
                   : 'Direct Input - Rewrite Mode';
                 
                 // Open chunked rewriter for both modes
@@ -1166,7 +1179,7 @@ Document text: ${extractedText}`;
               }}
             >
               <Play className="h-4 w-4" />
-              <span>{isDirectProcessing ? 'Processing...' : (processingMode === 'homework' ? 'Complete Assignment' : processingMode === 'text-to-math' ? 'Convert to Math' : 'Rewrite Text')}</span>
+              <span>{isDirectProcessing ? 'Processing...' : (processingMode === 'homework' ? 'Complete Assignment' : processingMode === 'text-to-math' ? 'Convert to Math' : processingMode === 'verbatim' ? 'Create Clean Copy' : 'Rewrite Text')}</span>
             </Button>
           </div>
         </CardContent>
