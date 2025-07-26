@@ -436,10 +436,95 @@ export default function ChunkedRewriter({
     }
   };
 
+  // Process verbatim mode - creates exact copies with hidden formatting removed
+  const processVerbatimMode = async () => {
+    setIsProcessing(true);
+    setCurrentChunkIndex(0);
+    setProgress(0);
+
+    try {
+      setProgress(25);
+
+      let chatContext = '';
+      if (includeChatContext && chatHistory.length > 0) {
+        chatContext = '\n\nChat Context (for reference):\n' + 
+          chatHistory.slice(-10).map(msg => `${msg.role}: ${msg.content}`).join('\n');
+      }
+
+      setProgress(50);
+
+      const response = await fetch('/api/verbatim-copy', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          content: originalText,
+          instructions: instructions || 'Create exact verbatim copy to remove formatting artifacts while preserving all content exactly as written.',
+          model: selectedModel,
+          chatContext: includeChatContext ? chatContext : undefined,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to create verbatim copy');
+      }
+
+      const result = await response.json();
+      
+      setProgress(75);
+      
+      const finalContent = result.rewrittenContent;
+
+      // Prepare metadata
+      const metadata = {
+        originalLength: originalText.length,
+        rewrittenLength: finalContent.length,
+        mode: 'verbatim',
+        model: selectedModel,
+        instructions: instructions,
+        includedChatContext: includeChatContext
+      };
+
+      // Store results for popup display
+      setFinalRewrittenContent(finalContent);
+      setRewriteMetadata(metadata);
+      setShowResultsPopup(true);
+
+      setProgress(100);
+
+      toast({
+        title: "Verbatim Copy Complete!",
+        description: "Successfully created clean copy without formatting artifacts.",
+      });
+
+      // Add cleaned content to chat immediately
+      onAddToChat(finalContent, metadata);
+
+      // Save as document
+      onRewriteComplete(finalContent, metadata);
+
+    } catch (error) {
+      console.error('Verbatim processing error:', error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to create verbatim copy",
+        variant: "destructive"
+      });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   const startRewrite = async () => {
     // Handle homework mode differently - it processes the entire text as one unit
     if (processingMode === 'homework') {
       return await processHomeworkMode();
+    }
+    
+    // Handle verbatim mode - uses verbatim-copy endpoint
+    if (processingMode === 'verbatim') {
+      return await processVerbatimMode();
     }
 
     // Validation for rewrite modes only
@@ -1677,6 +1762,7 @@ export default function ChunkedRewriter({
               <Play className="w-4 h-4" />
               <span>{processingMode === 'homework' ? 'Start Homework' : 
                      processingMode === 'text-to-math' ? 'Convert to Math' : 
+                     processingMode === 'verbatim' ? 'Create Clean Copy' :
                      'Start Rewrite'}</span>
             </Button>
           ) : (
