@@ -487,7 +487,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Text extraction endpoint for Text Cleaner
+  // Text extraction endpoint for Text Cleaner (raw text only)
   app.post('/api/documents/extract-text', upload.single('file'), async (req: Request, res: Response) => {
     try {
       if (!req.file) {
@@ -495,12 +495,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const file = req.file;
-      console.log(`[TextCleaner] Extracting text from: ${file.originalname}`);
+      console.log(`[TextCleaner] Extracting raw text from: ${file.originalname}`);
       
-      // Extract text using the existing documentProcessor
-      const extractedText = await extractText(file);
+      // Import text extraction functions directly to bypass document processing pipeline
+      const { extractTextFromPDF, extractTextFromDOCX, extractTextFromTXT } = await import('./services/documentProcessor');
       
-      console.log(`[TextCleaner] Successfully extracted ${extractedText.length} characters`);
+      let extractedText = '';
+      const fileExtension = file.originalname.split('.').pop()?.toLowerCase();
+      
+      switch (fileExtension) {
+        case 'pdf':
+          extractedText = await extractTextFromPDF(file.buffer);
+          break;
+        case 'docx':
+          extractedText = await extractTextFromDOCX(file.buffer);
+          break;
+        case 'txt':
+          extractedText = await extractTextFromTXT(file.buffer);
+          break;
+        default:
+          if (file.mimetype === 'text/plain') {
+            extractedText = file.buffer.toString('utf-8');
+          } else {
+            throw new Error(`Unsupported file type: ${fileExtension}`);
+          }
+      }
+      
+      console.log(`[TextCleaner] Successfully extracted ${extractedText.length} characters (raw text, no processing)`);
       
       res.json({ 
         content: extractedText,
