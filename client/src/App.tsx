@@ -17,7 +17,6 @@ import DocumentRewrite from "@/pages/DocumentRewrite";
 import RewriteHistory from "@/pages/RewriteHistory";
 import TextToSpeech from "@/pages/TextToSpeech";
 import Graphs from "@/pages/Graphs";
-import TextCleaner from "@/components/TextCleaner";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 
@@ -70,7 +69,6 @@ function Router() {
           <Route path="/rewrite-history" component={() => <ProtectedRoute component={RewriteHistory} />} />
           <Route path="/text-to-speech" component={() => <ProtectedRoute component={TextToSpeech} />} />
           <Route path="/graphs" component={() => <ProtectedRoute component={Graphs} />} />
-          <Route path="/text-cleaner" component={() => <ProtectedRoute component={TextCleaner} />} />
           <Route component={NotFound} />
         </Switch>
       </div>

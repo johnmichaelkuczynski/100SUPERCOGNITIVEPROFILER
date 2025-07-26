@@ -28,7 +28,7 @@ interface ChunkedRewriterProps {
   onRewriteComplete: (rewrittenText: string, metadata: any) => void;
   onAddToChat: (content: string, metadata: any) => void;
   chatHistory?: Array<{role: string; content: string}>;
-  initialProcessingMode?: 'rewrite' | 'homework' | 'text-to-math' | 'verbatim';
+  initialProcessingMode?: 'rewrite' | 'homework' | 'text-to-math';
   onSendToRewrite?: (content: string) => void;
 }
 
@@ -96,7 +96,7 @@ export default function ChunkedRewriter({
   const [senderEmail, setSenderEmail] = useState('');
   
   // Processing mode options - use the passed initial mode
-  const [processingMode, setProcessingMode] = useState<'rewrite' | 'homework' | 'text-to-math' | 'verbatim'>(initialProcessingMode);
+  const [processingMode, setProcessingMode] = useState<'rewrite' | 'homework' | 'text-to-math'>(initialProcessingMode);
   const [rewriteMode, setRewriteMode] = useState<'rewrite' | 'add' | 'both'>('rewrite');
   const [newChunkInstructions, setNewChunkInstructions] = useState('');
   const [numberOfNewChunks, setNumberOfNewChunks] = useState(3);
@@ -436,95 +436,10 @@ export default function ChunkedRewriter({
     }
   };
 
-  // Process verbatim mode - creates exact copies with hidden formatting removed
-  const processVerbatimMode = async () => {
-    setIsProcessing(true);
-    setCurrentChunkIndex(0);
-    setProgress(0);
-
-    try {
-      setProgress(25);
-
-      let chatContext = '';
-      if (includeChatContext && chatHistory.length > 0) {
-        chatContext = '\n\nChat Context (for reference):\n' + 
-          chatHistory.slice(-10).map(msg => `${msg.role}: ${msg.content}`).join('\n');
-      }
-
-      setProgress(50);
-
-      const response = await fetch('/api/verbatim-copy', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          content: originalText,
-          instructions: instructions || 'Create exact verbatim copy to remove formatting artifacts while preserving all content exactly as written.',
-          model: selectedModel,
-          chatContext: includeChatContext ? chatContext : undefined,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to create verbatim copy');
-      }
-
-      const result = await response.json();
-      
-      setProgress(75);
-      
-      const finalContent = result.rewrittenContent;
-
-      // Prepare metadata
-      const metadata = {
-        originalLength: originalText.length,
-        rewrittenLength: finalContent.length,
-        mode: 'verbatim',
-        model: selectedModel,
-        instructions: instructions,
-        includedChatContext: includeChatContext
-      };
-
-      // Store results for popup display
-      setFinalRewrittenContent(finalContent);
-      setRewriteMetadata(metadata);
-      setShowResultsPopup(true);
-
-      setProgress(100);
-
-      toast({
-        title: "Verbatim Copy Complete!",
-        description: "Successfully created clean copy without formatting artifacts.",
-      });
-
-      // Add cleaned content to chat immediately
-      onAddToChat(finalContent, metadata);
-
-      // Save as document
-      onRewriteComplete(finalContent, metadata);
-
-    } catch (error) {
-      console.error('Verbatim processing error:', error);
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to create verbatim copy",
-        variant: "destructive"
-      });
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
   const startRewrite = async () => {
     // Handle homework mode differently - it processes the entire text as one unit
     if (processingMode === 'homework') {
       return await processHomeworkMode();
-    }
-    
-    // Handle verbatim mode - uses verbatim-copy endpoint
-    if (processingMode === 'verbatim') {
-      return await processVerbatimMode();
     }
 
     // Validation for rewrite modes only
@@ -641,22 +556,6 @@ export default function ChunkedRewriter({
                 totalChunks: selectedChunks.length
               }),
             });
-          } else if (processingMode === 'verbatim') {
-            // Use verbatim-copy endpoint for exact reproduction without formatting artifacts
-            response = await fetch('/api/verbatim-copy', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                content: chunk.content,
-                instructions: instructions || 'Create an exact verbatim copy to remove formatting artifacts while preserving all content exactly as written.',
-                model: selectedModel,
-                chatContext: includeChatContext ? chatContext : undefined,
-                chunkIndex: i,
-                totalChunks: selectedChunks.length
-              }),
-            });
           } else {
             // Use rewrite endpoint with document context
             const previousChunks = selectedChunks.slice(0, i).map(c => ({ title: c.preview.substring(0, 50), content: c.content }));
@@ -688,7 +587,7 @@ export default function ChunkedRewriter({
 
           const result = await response.json();
 
-          // Store the content immediately (text-to-math returns 'mathContent', verbatim returns 'rewrittenContent', rewrite returns 'rewrittenContent')
+          // Store the content immediately (text-to-math returns 'mathContent', rewrite returns 'rewrittenContent')
           let content = processingMode === 'text-to-math' ? result.mathContent : 
                        result.rewrittenContent;
 
@@ -1345,7 +1244,7 @@ export default function ChunkedRewriter({
         {/* Processing Mode Selection */}
         <div className="space-y-4">
           <Label className="text-lg font-semibold">Processing Mode</Label>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Card className={`cursor-pointer transition-all ${processingMode === 'rewrite' ? 'ring-2 ring-blue-500 bg-blue-50' : 'hover:bg-gray-50'}`}
                   onClick={() => setProcessingMode('rewrite')}>
               <CardContent className="p-4 text-center">
@@ -1365,13 +1264,6 @@ export default function ChunkedRewriter({
               <CardContent className="p-4 text-center">
                 <h3 className="font-semibold">Text to Math</h3>
                 <p className="text-sm text-muted-foreground mt-2">Convert markup to perfect mathematical notation</p>
-              </CardContent>
-            </Card>
-            <Card className={`cursor-pointer transition-all ${processingMode === 'verbatim' ? 'ring-2 ring-orange-500 bg-orange-50' : 'hover:bg-gray-50'}`}
-                  onClick={() => setProcessingMode('verbatim')}>
-              <CardContent className="p-4 text-center">
-                <h3 className="font-semibold">Verbatim Copy</h3>
-                <p className="text-sm text-muted-foreground mt-2">Create exact copy to remove formatting artifacts</p>
               </CardContent>
             </Card>
           </div>
@@ -1692,7 +1584,6 @@ export default function ChunkedRewriter({
                 <div className="animate-spin rounded-full h-5 w-5 border-2 border-blue-600 border-t-transparent mr-3"></div>
                 {processingMode === 'homework' ? 'Processing Homework Assignment' : 
                  processingMode === 'text-to-math' ? 'Converting to Mathematical Notation' : 
-                 processingMode === 'verbatim' ? 'Creating Clean Verbatim Copy' :
                  'Rewriting Document Chunks'}
               </h3>
               <p className="text-blue-700 text-sm">
@@ -1700,8 +1591,6 @@ export default function ChunkedRewriter({
                   'AI is analyzing and completing your assignment. This typically takes 1-3 minutes for complex tasks.' :
                   processingMode === 'text-to-math' ? 
                   'Converting all mathematical expressions to proper LaTeX formatting for clean rendering.' :
-                  processingMode === 'verbatim' ?
-                  'Creating exact AI-generated copy to remove hidden formatting artifacts while preserving all content.' :
                   `Processing chunks with 15-second intervals between requests to prevent API rate limits.`}
               </p>
             </div>
@@ -1762,7 +1651,6 @@ export default function ChunkedRewriter({
               <Play className="w-4 h-4" />
               <span>{processingMode === 'homework' ? 'Start Homework' : 
                      processingMode === 'text-to-math' ? 'Convert to Math' : 
-                     processingMode === 'verbatim' ? 'Create Clean Copy' :
                      'Start Rewrite'}</span>
             </Button>
           ) : (
