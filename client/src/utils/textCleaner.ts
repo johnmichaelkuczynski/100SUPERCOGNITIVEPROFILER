@@ -45,27 +45,42 @@ export function cleanText(input: string): string {
   cleaned = cleaned.replace(/[\u00AD\u2060]/g, '');
   
   // Step 8: Normalize consecutive spaces to single spaces (but preserve intentional spacing)
-  // Only collapse multiple regular spaces, preserve line breaks
-  cleaned = cleaned.replace(/ {2,}/g, ' ');
+  // Only collapse multiple regular spaces within lines, preserve line breaks and paragraph structure
+  cleaned = cleaned.replace(/[^\S\n]{2,}/g, ' ');
   
   // Step 9: Unicode normalization to NFKC form
   // Compatibility decomposition followed by canonical composition
   cleaned = cleaned.normalize('NFKC');
   
-  // Step 10: Clean up whitespace at line boundaries while preserving structure
-  // Remove trailing spaces at end of lines
-  cleaned = cleaned.replace(/ +$/gm, '');
-  // Remove leading spaces at start of lines (but preserve intentional indentation)
-  // Only remove single leading space (likely formatting artifact)
-  cleaned = cleaned.replace(/^ /gm, '');
-  
-  // Step 11: Normalize line endings to \n
+  // Step 10: Normalize line endings first
   cleaned = cleaned.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
   
-  // Step 12: Remove excessive blank lines (more than 2 consecutive)
+  // Step 11: Preserve paragraph structure - don't collapse intentional line breaks
+  // Remove trailing spaces at end of lines
+  cleaned = cleaned.replace(/ +$/gm, '');
+  
+  // Step 12: Remove excessive blank lines (more than 2 consecutive) but preserve paragraph breaks
   cleaned = cleaned.replace(/\n{3,}/g, '\n\n');
   
-  // Step 13: Trim start and end whitespace
+  // Step 13: Remove single leading spaces (formatting artifacts) but preserve intentional indentation
+  cleaned = cleaned.replace(/^\s{1}(?!\s)/gm, '');
+  
+  // Step 14: Ensure proper paragraph separation
+  // If we have very long lines without breaks, add paragraph breaks at sentence endings
+  const lines = cleaned.split('\n');
+  const processedLines = lines.map(line => {
+    if (line.length > 500 && !line.includes('\n')) {
+      // Split very long lines at sentence boundaries
+      return line.replace(/([.!?])\s+([A-Z])/g, '$1\n\n$2');
+    }
+    return line;
+  });
+  cleaned = processedLines.join('\n');
+  
+  // Step 15: Final cleanup - remove excessive spaces but preserve structure
+  cleaned = cleaned.replace(/\n{3,}/g, '\n\n');
+  
+  // Step 16: Trim start and end whitespace
   cleaned = cleaned.trim();
 
   return cleaned;
