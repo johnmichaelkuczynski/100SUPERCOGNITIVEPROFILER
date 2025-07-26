@@ -19,6 +19,7 @@ import ChatDialogue, { ChatDialogueRef } from '@/components/ChatDialogue';
 import { SpeechInput, useSpeechInput } from '@/components/ui/speech-input';
 import MindProfiler from '@/components/MindProfiler';
 import SimpleRewriter from '@/components/SimpleRewriter';
+import TextCleaner from '@/components/TextCleaner';
 import { useDocuments } from '@/hooks/use-documents';
 
 interface Message {
@@ -863,10 +864,16 @@ Document text: ${extractedText}`;
 
       {/* Main Tab Navigation */}
       <Tabs defaultValue="main" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 mb-6">
+        <TabsList className="grid w-full grid-cols-3 mb-6">
           <TabsTrigger value="main">Main Features</TabsTrigger>
+          <TabsTrigger value="text-cleaner">Text Cleaner</TabsTrigger>
           <TabsTrigger value="mind-profiler">Mind Profiler</TabsTrigger>
         </TabsList>
+        
+        <TabsContent value="text-cleaner">
+          {/* Text Cleaner - Standalone formatting cleanup */}
+          <TextCleaner />
+        </TabsContent>
         
         <TabsContent value="mind-profiler">
           {/* Mind Profiler - Heart of the App */}
