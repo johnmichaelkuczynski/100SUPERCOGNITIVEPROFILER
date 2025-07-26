@@ -866,8 +866,8 @@ Document text: ${extractedText}`;
       <Tabs defaultValue="main" className="w-full">
         <TabsList className="grid w-full grid-cols-3 mb-6">
           <TabsTrigger value="main">Main Features</TabsTrigger>
-          <TabsTrigger value="text-cleaner">Text Cleaner</TabsTrigger>
           <TabsTrigger value="mind-profiler">Mind Profiler</TabsTrigger>
+          <TabsTrigger value="text-cleaner">Text Cleaner</TabsTrigger>
         </TabsList>
         
         <TabsContent value="text-cleaner">

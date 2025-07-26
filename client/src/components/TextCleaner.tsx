@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Copy, Download, Sparkles, Eye, BarChart3 } from 'lucide-react';
+import { Copy, Download, Sparkles, Eye, BarChart3, Upload, FileText } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cleanText, getCleaningStats, previewCleaning } from '@/utils/textCleaner';
 
@@ -12,6 +12,8 @@ export default function TextCleaner() {
   const [outputText, setOutputText] = useState('');
   const [showStats, setShowStats] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
   const handleClean = () => {
@@ -65,6 +67,63 @@ export default function TextCleaner() {
       title: "Downloaded",
       description: "Clean text saved as cleaned-text.txt",
     });
+  };
+
+  const handleFileUpload = async (file: File) => {
+    setIsUploading(true);
+    
+    try {
+      if (file.type === 'text/plain') {
+        // Handle text files directly
+        const text = await file.text();
+        setInputText(text);
+        toast({
+          title: "File uploaded",
+          description: `Loaded ${file.name} successfully`,
+        });
+      } else if (file.type === 'application/pdf' || 
+                 file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+                 file.name.endsWith('.docx')) {
+        // Handle PDF and DOCX files via API
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const response = await fetch('/api/documents/extract-text', {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to extract text from document');
+        }
+
+        const data = await response.json();
+        setInputText(data.content);
+        
+        toast({
+          title: "Document processed",
+          description: `Extracted text from ${file.name}`,
+        });
+      } else {
+        throw new Error('Unsupported file type. Please use .txt, .pdf, or .docx files.');
+      }
+    } catch (error) {
+      console.error('Error processing file:', error);
+      toast({
+        title: "Upload failed",
+        description: error instanceof Error ? error.message : "Could not process the file",
+        variant: "destructive"
+      });
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleFileInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      handleFileUpload(file);
+    }
   };
 
   const stats = inputText && outputText ? getCleaningStats(inputText, outputText) : null;
@@ -181,12 +240,30 @@ export default function TextCleaner() {
           <div className="space-y-2">
             <div className="flex justify-between items-center">
               <label className="text-sm font-medium">Input Text</label>
-              <span className="text-xs text-gray-500">
-                {inputWordCount} words | {inputText.length} characters
-              </span>
+              <div className="flex items-center gap-4">
+                <span className="text-xs text-gray-500">
+                  {inputWordCount} words | {inputText.length} characters
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isUploading}
+                >
+                  <Upload className="h-4 w-4 mr-1" />
+                  {isUploading ? 'Uploading...' : 'Upload File'}
+                </Button>
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleFileInputChange}
+                  accept=".txt,.pdf,.docx"
+                  className="hidden"
+                />
+              </div>
             </div>
             <Textarea
-              placeholder="Paste your text here to clean formatting artifacts..."
+              placeholder="Paste your text here or upload a document (.txt, .pdf, .docx) to clean formatting artifacts..."
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
               className="min-h-[200px] font-mono text-sm"
