@@ -486,6 +486,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: 'Failed to process document', error: (error as Error).message });
     }
   });
+
+  // Text extraction endpoint for Text Cleaner
+  app.post('/api/documents/extract-text', upload.single('file'), async (req: Request, res: Response) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: 'No file uploaded' });
+      }
+      
+      const file = req.file;
+      console.log(`[TextCleaner] Extracting text from: ${file.originalname}`);
+      
+      // Extract text using the existing documentProcessor
+      const extractedText = await extractText(file);
+      
+      console.log(`[TextCleaner] Successfully extracted ${extractedText.length} characters`);
+      
+      res.json({ 
+        content: extractedText,
+        success: true,
+        message: `Successfully extracted ${extractedText.length} characters from ${file.originalname}`
+      });
+      
+    } catch (error) {
+      console.error('[TextCleaner] Error extracting text:', error);
+      res.status(500).json({ 
+        error: 'Failed to extract text from document',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
   
   // Get documents route
   app.get('/api/documents', async (req: Request, res: Response) => {
